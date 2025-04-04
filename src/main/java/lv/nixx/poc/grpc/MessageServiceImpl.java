@@ -62,6 +62,36 @@ class MessageServiceImpl extends MessageServiceGrpc.MessageServiceImplBase {
         };
     }
 
+    @Override
+    public StreamObserver<Request> bidirectionalStreaming(StreamObserver<Response> responseObserver) {
+
+        return new StreamObserver<>() {
+            @Override
+            public void onNext(Request request) {
+                System.out.println(Thread.currentThread().getName() + ": Received request from client: " + request.getName());
+
+                Response response = Response.newBuilder()
+                        .setMessage("Server response: " + request.getName())
+                        .build();
+                responseObserver.onNext(response);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                System.err.println("Error receiving message: " + t.getMessage());
+            }
+
+            @Override
+            public void onCompleted() {
+                System.out.println("Server finished processing messages from client. Send final message to client");
+
+                responseObserver.onNext(Response.newBuilder().setMessage("FinalMessage").build());
+                responseObserver.onCompleted();
+            }
+        };
+
+    }
+
     private static Timestamp getTimestamp() {
         LocalDateTime localDateTime = LocalDateTime.now();
 

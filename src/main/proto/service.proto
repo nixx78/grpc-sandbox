@@ -10,6 +10,7 @@ option java_outer_classname = "MessageServiceProto";
 service MessageService {
     rpc ProcessMessage (Request) returns (Response);
     rpc ProcessMessagesAsStream (stream Request) returns (Response);
+    rpc BidirectionalStreaming (stream Request) returns (stream Response);
 }
 
 message Request {

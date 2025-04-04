@@ -1,4 +1,4 @@
-package lv.nixx.poc.grpc;
+package lv.nixx.poc.grpc.client;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
