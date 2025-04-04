@@ -2,45 +2,45 @@ package lv.nixx.poc.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import lv.nixx.poc.grpc.proto.MessageServiceGrpc;
+import lv.nixx.poc.grpc.proto.Request;
+import lv.nixx.poc.grpc.proto.Response;
 
 import java.util.concurrent.TimeUnit;
-
-import lv.nixx.poc.grpc.proto.HelloRequest;
-import lv.nixx.poc.grpc.proto.HelloResponse;
-import lv.nixx.poc.grpc.proto.HelloServiceGrpc;
 
 public class GrpcClient {
 
     private final ManagedChannel channel;
 
-    private final HelloServiceGrpc.HelloServiceBlockingStub blockingStub;
+    private final MessageServiceGrpc.MessageServiceBlockingStub blockingStub;
 
     public GrpcClient(String host, int port) {
         channel = ManagedChannelBuilder.forAddress(host, port)
                 .usePlaintext()
                 .build();
 
-        blockingStub = HelloServiceGrpc.newBlockingStub(channel);
+        blockingStub = MessageServiceGrpc.newBlockingStub(channel);
     }
 
     public void shutdown() throws InterruptedException {
         channel.shutdown().awaitTermination(5, TimeUnit.SECONDS);
     }
 
-    public void greet(String name) {
-        HelloRequest request = HelloRequest.newBuilder()
+    public void sendMessage(String name) {
+
+        Request request = Request.newBuilder()
                 .setName(name)
                 .build();
 
-        HelloResponse response = blockingStub.sayHello(request);
-        System.out.println("Greeting: " + response.getMessage());
+        Response response = blockingStub.processMessage(request);
+        System.out.println("Message response: " + response.getMessage() + ":" + response.getDateTime());
     }
 
     public static void main(String[] args) throws Exception {
         GrpcClient client = new GrpcClient("localhost", 50051);
         try {
             String name = "Name:" + System.currentTimeMillis();
-            client.greet(name);
+            client.sendMessage(name);
         } finally {
             client.shutdown();
         }

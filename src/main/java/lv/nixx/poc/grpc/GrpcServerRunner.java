@@ -3,21 +3,21 @@ package lv.nixx.poc.grpc;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
-import io.grpc.stub.StreamObserver;
-import lv.nixx.poc.grpc.proto.HelloRequest;
-import lv.nixx.poc.grpc.proto.HelloResponse;
+import java.util.concurrent.Executors;
 
-import lv.nixx.poc.grpc.proto.HelloServiceGrpc;
-
-public class GrpcServer {
+public class GrpcServerRunner {
 
     private Server server;
 
     private void start() throws Exception {
         int port = 50051;
 
+        int threadPoolSize = 5;
+        var threadPool = Executors.newFixedThreadPool(threadPoolSize);
+
         server = ServerBuilder.forPort(port)
-                .addService(new HelloImpl())
+                .addService(new MessageServiceImpl())
+                .executor(threadPool)
                 .build()
                 .start();
 
@@ -25,7 +25,7 @@ public class GrpcServer {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.err.println("*** shutting down gRPC server since JVM is shutting down");
-            GrpcServer.this.stop();
+            GrpcServerRunner.this.stop();
             System.err.println("*** server shut down");
         }));
     }
@@ -44,28 +44,10 @@ public class GrpcServer {
     }
 
     public static void main(String[] args) throws Exception {
-        final GrpcServer server = new GrpcServer();
+        final GrpcServerRunner server = new GrpcServerRunner();
         server.start();
         server.blockUntilShutdown();
     }
 
-    static class HelloImpl extends HelloServiceGrpc.HelloServiceImplBase {
-
-        @Override
-        public void sayHello(HelloRequest request, StreamObserver<HelloResponse> responseObserver) {
-
-            String name = request.getName();
-            String greeting = "Hello, " + name;
-
-            System.out.printf("Request from client [%s]%n", greeting);
-
-            HelloResponse response = HelloResponse.newBuilder()
-                    .setMessage(greeting)
-                    .build();
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
-        }
-
-    }
 }
 
