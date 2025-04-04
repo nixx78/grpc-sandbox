@@ -17,6 +17,7 @@ public class GrpcServerRunner {
 
         server = ServerBuilder.forPort(port)
                 .addService(new MessageServiceImpl())
+                .addService(new CalculationServiceImpl())
                 .executor(threadPool)
                 .build()
                 .start();

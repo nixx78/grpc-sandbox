@@ -3,30 +3,30 @@ package lv.nixx.poc.grpc.client;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
-import lv.nixx.poc.grpc.proto.MessageServiceGrpc;
-import lv.nixx.poc.grpc.proto.Request;
-import lv.nixx.poc.grpc.proto.Response;
+import lv.nixx.poc.grpc.proto.CalculationRequest;
+import lv.nixx.poc.grpc.proto.CalculationResponse;
+import lv.nixx.poc.grpc.proto.CalculationServiceGrpc;
 
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-public class BidirectionalClient {
+public class BidirectionalCalculationClient {
 
-    private final MessageServiceGrpc.MessageServiceStub asyncStub;
+    private final CalculationServiceGrpc.CalculationServiceStub asyncStub;
     private final ManagedChannel channel;
 
-    public BidirectionalClient(ManagedChannel channel) {
-        asyncStub = MessageServiceGrpc.newStub(channel);
+    public BidirectionalCalculationClient(ManagedChannel channel) {
+        asyncStub = CalculationServiceGrpc.newStub(channel);
         this.channel = channel;
     }
 
     public void sendMessages() {
 
-        StreamObserver<Request> requestObserver = asyncStub.bidirectionalStreaming (new StreamObserver<>() {
+        StreamObserver<CalculationRequest> requestObserver = asyncStub.calculate(new StreamObserver<>() {
 
             @Override
-            public void onNext(Response response) {
-                System.out.println("Received response: " + response.getMessage());
+            public void onNext(CalculationResponse response) {
+                System.out.println("Received response: " + response);
             }
 
             @Override
@@ -44,12 +44,27 @@ public class BidirectionalClient {
         try (Scanner scanner = new Scanner(System.in)) {
             String message;
             while (true) {
-                System.out.print("Enter message (type 'exit' to stop): ");
+                System.out.print("Enter numbers (type 'exit' to stop): ");
                 message = scanner.nextLine();
                 if ("exit".equalsIgnoreCase(message)) {
                     break;
                 }
-                requestObserver.onNext(Request.newBuilder().setName(message).build());
+
+                String[] parts = message.split("\\s+"); // Разбиваем строку по пробелу
+
+                if (parts.length != 2) {
+                    System.out.println("Please enter exactly two numbers.");
+                    continue;
+                }
+
+                var num1 = parts[0];
+                var num2 = parts[1];
+
+                requestObserver.onNext(CalculationRequest.newBuilder()
+                        .setFirstNumber(num1)
+                        .setSecondNumber(num2)
+                        .build());
+
             }
         } finally {
             requestObserver.onCompleted();
@@ -61,7 +76,7 @@ public class BidirectionalClient {
                 .usePlaintext()
                 .build();
 
-        BidirectionalClient client = new BidirectionalClient(channel);
+        BidirectionalCalculationClient client = new BidirectionalCalculationClient(channel);
         client.sendMessages();
 
         channel.awaitTermination(5, TimeUnit.SECONDS);
