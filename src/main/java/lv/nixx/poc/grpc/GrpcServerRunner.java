@@ -2,6 +2,7 @@ package lv.nixx.poc.grpc;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import lv.nixx.poc.grpc.crud.PeopleServiceImpl;
 
 import java.util.concurrent.Executors;
 
@@ -18,6 +19,7 @@ public class GrpcServerRunner {
         server = ServerBuilder.forPort(port)
                 .addService(new MessageServiceImpl())
                 .addService(new CalculationServiceImpl())
+                .addService(new PeopleServiceImpl())
                 .executor(threadPool)
                 .build()
                 .start();
