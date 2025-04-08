@@ -11,9 +11,11 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PeopleServiceImpl extends PeopleServiceGrpc.PeopleServiceImplBase {
 
+    AtomicInteger maxId = new AtomicInteger(3);
     Map<Integer, Person> personMap = new HashMap<>();
 
     public PeopleServiceImpl() {
@@ -38,7 +40,21 @@ public class PeopleServiceImpl extends PeopleServiceGrpc.PeopleServiceImplBase {
 
     @Override
     public void createPerson(CreatePersonRequest request, StreamObserver<PersonResponse> responseObserver) {
-        //TODO Implement this method
+        int newPersonId = maxId.getAndIncrement();
+
+        Person p = Person.newBuilder()
+                .setId(newPersonId)
+                .setName(request.getName())
+                .setSurname(request.getSurname())
+                .setDateOfBirth(request.getDateOfBirth())
+                .build();
+
+        personMap.put(newPersonId, p);
+
+        System.out.printf("New Person created, id [%s]%n", newPersonId);
+
+        responseObserver.onNext(PersonResponse.newBuilder().setPerson(p).build());
+        responseObserver.onCompleted();
     }
 
     @Override
@@ -55,17 +71,38 @@ public class PeopleServiceImpl extends PeopleServiceGrpc.PeopleServiceImplBase {
             responseObserver.onNext(PersonResponse.newBuilder().setPerson(person).build());
             responseObserver.onCompleted();
         }
-
     }
 
     @Override
     public void updatePerson(UpdatePersonRequest request, StreamObserver<PersonResponse> responseObserver) {
-        //TODO Implement this method
+        Person person = request.getPerson();
+
+        int id = person.getId();
+        if (personMap.containsKey(id)) {
+            personMap.put(id, person);
+
+            responseObserver.onNext(PersonResponse.newBuilder().setPerson(person).build());
+            responseObserver.onCompleted();
+        } else {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("Person with id " + id + " not found")
+                    .asRuntimeException());
+        }
     }
 
     @Override
     public void deletePerson(DeletePersonRequest request, StreamObserver<Empty> responseObserver) {
-        //TODO Implement this method
+        int id = request.getId();
+
+        Person person = personMap.remove(id);
+        if (person == null) {
+            responseObserver.onError(Status.NOT_FOUND
+                    .withDescription("Person with id " + id + " not found")
+                    .asRuntimeException());
+        } else {
+            responseObserver.onNext(Empty.newBuilder().build());
+            responseObserver.onCompleted();
+        }
     }
 
     @Override
